@@ -1,0 +1,49 @@
+name: Shopify External Sync
+
+on:
+  # شغّل المزامنة كل ساعة
+  schedule:
+    - cron: '0 * * * *'
+  # أو إذا حابب شغّل يدويًا من تبويب Actions
+  workflow_dispatch:
+
+jobs:
+  sync_products:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare last-sync file
+        # ينشئ ملف فارغ إن لم يكن موجودًا
+        run: echo "1970-01-01T00:00:00Z" > ${{ github.workspace }}/last-sync.txt
+
+      - name: Run sync script
+        env:
+          SHOPIFY_ADMIN_TOKEN: ${{ secrets.SHOPIFY_ADMIN_TOKEN }}
+          EXTERNAL_STORE:       ${{ secrets.EXTERNAL_STORE }}
+          MY_STORE:             ${{ secrets.MY_STORE }}
+          MY_COLLECTION_ID:     ${{ secrets.MY_COLLECTION_ID }}
+          LAST_SYNC_FILE:       ${{ github.workspace }}/last-sync.txt
+        run: node fetch-external.js
+
+      - name: Commit updated last-sync
+        # يرفع التغييرات على الملف الذي يحمل آخر توقيت مزامنة
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add last-sync.txt
+          git commit -m "Update last sync timestamp" || echo "No changes to commit"
+          git push
+        env:
+          # يلزم TOKEN للصلاحيات إذا المستودع خاص:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
