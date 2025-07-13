@@ -25,7 +25,7 @@ jobs:
 
       - name: Prepare last-sync file
         # ينشئ ملف فارغ إن لم يكن موجودًا
-        run: echo "1970-01-01T00:00:00Z" > ${{ github.workspace }}/last-sync.txt
+        run: echo "2025-07-07T00:00:00Z" > ${{ github.workspace }}/last-sync.txt
 
       - name: Run sync script
         env:
